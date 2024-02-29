@@ -12,6 +12,7 @@ var cacheManager = cache.NewCache(7)
 
 type PokeApi interface {
 	GetLocationArea(url string) LocationAreaRS
+	GetPokemon(area string) PokemonRS
 }
 
 type Area struct {
@@ -30,6 +31,15 @@ type LocationAreaRS struct {
 	}
 }
 
+type PokemonRS struct {
+	PokemonEncounters []struct {
+		Pokemon struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"pokemon"`
+	} `json:"pokemon_encounters"`
+}
+
 func (api PokeApiImpl) GetLocationArea(url string) LocationAreaRS {
 	areas := LocationAreaRS{}
 	err := getJson(url, &areas)
@@ -37,6 +47,15 @@ func (api PokeApiImpl) GetLocationArea(url string) LocationAreaRS {
 		panic(err)
 	}
 	return areas
+}
+
+func (api PokeApiImpl) GetPokemon(area string) PokemonRS {
+	pokemons := PokemonRS{}
+	err := getJson(area, &pokemons)
+	if err != nil {
+		panic(err)
+	}
+	return pokemons
 }
 
 func getJson(url string, target interface{}) error {

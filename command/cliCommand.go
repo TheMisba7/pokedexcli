@@ -13,7 +13,7 @@ var Commands map[string]command
 type command struct {
 	name        string
 	description string
-	Callback    func() error
+	Callback    func([]string) error
 	config      *config
 }
 
@@ -47,10 +47,24 @@ func InitCommands() map[string]command {
 			Callback:    mapBackCallBack,
 			config:      config,
 		},
+		"explore": {
+			name:        "explore",
+			description: "list pokemons within a location area. \n usage: explore <area_name>.",
+			Callback:    exploreCallBack,
+		},
 	}
 }
 
-func mapBackCallBack() error {
+func exploreCallBack(params []string) error {
+	area := locationAreaURL + "/" + params[0]
+	pokemon := pokeapi.GetPokemon(area)
+	for _, pke := range pokemon.PokemonEncounters {
+		fmt.Println(pke.Pokemon.Name)
+	}
+	return nil
+}
+
+func mapBackCallBack(params []string) error {
 	mapCommand := Commands["mapb"]
 	if mapCommand.config.previous == "" {
 		return fmt.Errorf("no previous page to show")
@@ -64,7 +78,7 @@ func mapBackCallBack() error {
 	return nil
 }
 
-func mapCallBack() error {
+func mapCallBack(params []string) error {
 	mapCommand := Commands["map"]
 	fmt.Println("next: ", mapCommand.config.next)
 	area := pokeapi.GetLocationArea(mapCommand.config.next)
@@ -76,11 +90,11 @@ func mapCallBack() error {
 	return nil
 }
 
-func exitCallBack() error {
+func exitCallBack(params []string) error {
 	return nil
 }
 
-func helpCallback() error {
+func helpCallback(params []string) error {
 	for _, command := range Commands {
 		fmt.Println("name: " + command.name)
 		fmt.Println("description: " + command.description)

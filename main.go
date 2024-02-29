@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"pokedexcli/command"
+	"strings"
 )
 
 func main() {
@@ -14,17 +15,18 @@ func main() {
 		fmt.Printf("pokedex> ")
 		scanner.Scan()
 		input := scanner.Text()
+		cmdParams := strings.Split(input, " ")
 		if "exit" == input {
 			break
 		}
-		cliCmd, ok := command.Commands[input]
+		cliCmd, ok := command.Commands[cmdParams[0]]
 		if ok {
-			err := cliCmd.Callback()
+			err := cliCmd.Callback(cmdParams[1:])
 			if err != nil {
 				fmt.Println(err)
 			}
 		} else {
-			fmt.Printf("unkown command")
+			fmt.Println("unknown command")
 		}
 	}
 }
