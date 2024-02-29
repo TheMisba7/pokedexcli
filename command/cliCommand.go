@@ -2,10 +2,12 @@ package command
 
 import (
 	"fmt"
+	"math/rand"
 	"pokedexcli/api"
 )
 
 const locationAreaURL = "https://pokeapi.co/api/v2/location-area"
+const pokemonUrl = "https://pokeapi.co/api/v2/pokemon/"
 
 var pokeapi = api.PokeApiImpl{}
 var Commands map[string]command
@@ -52,12 +54,30 @@ func InitCommands() map[string]command {
 			description: "list pokemons within a location area. \n usage: explore <area_name>.",
 			Callback:    exploreCallBack,
 		},
+		"catch": {
+			name:        "catch",
+			description: "Used to catch a pokemon. \n usage: catch <pokemon_name>",
+			Callback:    catchCallBack,
+		},
 	}
+}
+
+func catchCallBack(param []string) error {
+	pokeUrl := pokemonUrl + param[0]
+	fmt.Println(fmt.Sprintf("Throwing a Pokeball at %s ...", param[0]))
+	pokemon := pokeapi.GetPokemon(pokeUrl)
+	if pokemon.BaseExperience < rand.Intn(100) {
+		fmt.Println(fmt.Sprintf("%s was caught!", param[0]))
+	} else {
+		fmt.Println(fmt.Sprintf("%s escaped!", param[0]))
+	}
+	fmt.Println(pokemon.BaseExperience)
+	return nil
 }
 
 func exploreCallBack(params []string) error {
 	area := locationAreaURL + "/" + params[0]
-	pokemon := pokeapi.GetPokemon(area)
+	pokemon := pokeapi.GetPokemons(area)
 	for _, pke := range pokemon.PokemonEncounters {
 		fmt.Println(pke.Pokemon.Name)
 	}
