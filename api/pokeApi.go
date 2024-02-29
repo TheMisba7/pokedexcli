@@ -1,11 +1,14 @@
-package main
+package api
 
 import (
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"pokedexcli/cache"
 )
+
+var cacheManager = cache.NewCache(7)
 
 type PokeApi interface {
 	GetLocationArea(url string) LocationAreaRS
@@ -37,6 +40,10 @@ func (api PokeApiImpl) GetLocationArea(url string) LocationAreaRS {
 }
 
 func getJson(url string, target interface{}) error {
+	val, found := cacheManager.Get(url)
+	if found {
+		return json.Unmarshal(val, target)
+	}
 	r, err := http.Get(url)
 	fmt.Println(r.Status)
 	if err != nil {
@@ -44,5 +51,6 @@ func getJson(url string, target interface{}) error {
 	}
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
+	go cacheManager.Add(url, body)
 	return json.Unmarshal(body, target)
 }

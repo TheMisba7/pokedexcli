@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"pokedexcli/api"
 )
 
 const locationAreaURL = "https://pokeapi.co/api/v2/location-area"
 
-var pokeapi = PokeApiImpl{}
+var pokeapi = api.PokeApiImpl{}
 var commands map[string]command
 
 type command struct {
