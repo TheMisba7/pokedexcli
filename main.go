@@ -97,7 +97,7 @@ func main() {
 		fmt.Printf("pokedex> ")
 		scanner.Scan()
 		input := scanner.Text()
-		if "exist" == input {
+		if "exit" == input {
 			break
 		}
 		command, ok := commands[input]
