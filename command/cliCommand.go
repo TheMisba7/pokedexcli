@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"math/rand"
 	"pokedexcli/api"
+	"pokedexcli/model"
 )
 
 const locationAreaURL = "https://pokeapi.co/api/v2/location-area"
 const pokemonUrl = "https://pokeapi.co/api/v2/pokemon/"
 
+var catchedPokemon = make(map[string]model.Pokemon)
 var pokeapi = api.PokeApiImpl{}
 var Commands map[string]command
 
@@ -59,7 +61,25 @@ func InitCommands() map[string]command {
 			description: "Used to catch a pokemon. \n usage: catch <pokemon_name>",
 			Callback:    catchCallBack,
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "It takes the name of a Pokemon as an argument. It should print the name, height, weight, stats and type(s) of the Pokemon",
+			Callback:    inspectCallBack,
+		},
 	}
+}
+
+func inspectCallBack(params []string) error {
+	pokeName := params[0]
+	pokemon, ok := catchedPokemon[pokeName]
+	if !ok {
+		fmt.Println("you have not caught ", pokeName)
+		return nil
+	}
+	fmt.Println("Name: ", pokeName)
+	fmt.Println("Base experience: ", pokemon.BaseExperience)
+
+	return nil
 }
 
 func catchCallBack(param []string) error {
@@ -68,6 +88,7 @@ func catchCallBack(param []string) error {
 	pokemon := pokeapi.GetPokemon(pokeUrl)
 	if pokemon.BaseExperience < rand.Intn(100) {
 		fmt.Println(fmt.Sprintf("%s was caught!", param[0]))
+		catchedPokemon[param[0]] = pokemon
 	} else {
 		fmt.Println(fmt.Sprintf("%s escaped!", param[0]))
 	}
