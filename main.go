@@ -15,9 +15,9 @@ func main() {
 		fmt.Printf("pokedex> ")
 		scanner.Scan()
 		input := scanner.Text()
-		cmdParams := strings.Split(input, " ")
-		if "exit" == input {
-			break
+		cmdParams := strings.Fields(input)
+		if len(cmdParams) == 0 {
+			continue
 		}
 		cliCmd, ok := command.Commands[cmdParams[0]]
 		if ok {

@@ -53,7 +53,7 @@ type Config struct {
 }
 
 type PokeApi interface {
-	GetLocationArea(url string) LocationAreaRS
-	GetPokemons(area string) PokemonRS
-	GetPokemon(url string) Pokemon
+	GetLocationArea(url string) (LocationAreaRS, error)
+	GetListOfPokemon(area string) (PokemonRS, error)
+	GetPokemon(url string) (Pokemon, error)
 }

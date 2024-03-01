@@ -9,49 +9,54 @@ import (
 	"pokedexcli/model"
 )
 
-var cacheManager = cache.NewCache(7)
+var cacheManager = cache.NewCache(60)
 
 type PokeApiImpl struct{}
 
-func (api PokeApiImpl) GetLocationArea(url string) model.LocationAreaRS {
+func (api PokeApiImpl) GetLocationArea(url string) (model.LocationAreaRS, error) {
 	areas := model.LocationAreaRS{}
-	err := getJson(url, &areas)
+	err := httpGet(url, &areas)
 	if err != nil {
-		panic(err)
+		return areas, err
 	}
-	return areas
+	return areas, nil
 }
 
-func (api PokeApiImpl) GetPokemons(area string) model.PokemonRS {
-	pokemons := model.PokemonRS{}
-	err := getJson(area, &pokemons)
+func (api PokeApiImpl) GetListOfPokemon(area string) (model.PokemonRS, error) {
+	pokemonList := model.PokemonRS{}
+	err := httpGet(area, &pokemonList)
 	if err != nil {
-		panic(err)
+		return pokemonList, err
 	}
-	return pokemons
+	return pokemonList, nil
 }
 
-func (api PokeApiImpl) GetPokemon(url string) model.Pokemon {
+func (api PokeApiImpl) GetPokemon(url string) (model.Pokemon, error) {
 	pke := model.Pokemon{}
-	err := getJson(url, &pke)
+	err := httpGet(url, &pke)
 	if err != nil {
-		panic(err)
+		return pke, err
 	}
-	return pke
+	return pke, nil
 }
 
-func getJson(url string, target interface{}) error {
+func httpGet(url string, target interface{}) error {
 	val, found := cacheManager.Get(url)
 	if found {
 		return json.Unmarshal(val, target)
 	}
 	r, err := http.Get(url)
-	fmt.Println(r.Status)
+	defer r.Body.Close()
 	if err != nil {
 		return err
 	}
-	defer r.Body.Close()
+	if r.StatusCode > 399 {
+		return fmt.Errorf("bad status code: %v", r.StatusCode)
+	}
 	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil
+	}
 	go cacheManager.Add(url, body)
 	return json.Unmarshal(body, target)
 }

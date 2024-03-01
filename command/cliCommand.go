@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"pokedexcli/api"
 	"pokedexcli/model"
 )
@@ -62,8 +63,8 @@ func InitCommands() map[string]model.Command {
 	}
 }
 
-func pokedexCallBack(strings []string) error {
-	if len(caughtPokemon) < 1 {
+func pokedexCallBack(_ []string) error {
+	if len(caughtPokemon) == 0 {
 		fmt.Println("Your Pokedex is empty.")
 		return nil
 	}
@@ -94,15 +95,17 @@ func inspectCallBack(params []string) error {
 		fmt.Println("- ", pkeType.Type.Name)
 
 	}
-
 	return nil
 }
 
 func catchCallBack(param []string) error {
 	pokeUrl := pokemonUrl + param[0]
 	fmt.Println(fmt.Sprintf("Throwing a Pokeball at %s ...", param[0]))
-	pokemon := pokeApi.GetPokemon(pokeUrl)
-	if pokemon.BaseExperience < rand.Intn(500) {
+	pokemon, err := pokeApi.GetPokemon(pokeUrl)
+	if err != nil {
+		return err
+	}
+	if pokemon.BaseExperience < rand.Intn(pokemon.BaseExperience+rand.Intn(20)) {
 		fmt.Println(fmt.Sprintf("%s was caught!", param[0]))
 		caughtPokemon[param[0]] = pokemon
 	} else {
@@ -114,7 +117,10 @@ func catchCallBack(param []string) error {
 
 func exploreCallBack(params []string) error {
 	area := locationAreaURL + "/" + params[0]
-	pokemon := pokeApi.GetPokemons(area)
+	pokemon, err := pokeApi.GetListOfPokemon(area)
+	if err != nil {
+		return err
+	}
 	for _, pke := range pokemon.PokemonEncounters {
 		fmt.Println(pke.Pokemon.Name)
 	}
@@ -126,7 +132,10 @@ func mapBackCallBack(_ []string) error {
 	if mapCommand.Config.Previous == "" {
 		return fmt.Errorf("no previous page to show")
 	}
-	area := pokeApi.GetLocationArea(mapCommand.Config.Previous)
+	area, err := pokeApi.GetLocationArea(mapCommand.Config.Previous)
+	if err != nil {
+		return err
+	}
 	for _, result := range area.Results {
 		fmt.Println(result.Name)
 	}
@@ -137,8 +146,10 @@ func mapBackCallBack(_ []string) error {
 
 func mapCallBack(_ []string) error {
 	mapCommand := Commands["map"]
-	fmt.Println("next: ", mapCommand.Config.Next)
-	area := pokeApi.GetLocationArea(mapCommand.Config.Next)
+	area, err := pokeApi.GetLocationArea(mapCommand.Config.Next)
+	if err != nil {
+		return err
+	}
 	for _, result := range area.Results {
 		fmt.Println(result.Name)
 	}
@@ -148,6 +159,7 @@ func mapCallBack(_ []string) error {
 }
 
 func exitCallBack(_ []string) error {
+	os.Exit(0)
 	return nil
 }
 
