@@ -55,7 +55,7 @@ func httpGet(url string, target interface{}) error {
 	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return nil
+		return err
 	}
 	go cacheManager.Add(url, body)
 	return json.Unmarshal(body, target)
