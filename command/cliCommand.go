@@ -10,74 +10,90 @@ import (
 const locationAreaURL = "https://pokeapi.co/api/v2/location-area"
 const pokemonUrl = "https://pokeapi.co/api/v2/pokemon/"
 
-var catchedPokemon = make(map[string]model.Pokemon)
-var pokeapi = api.PokeApiImpl{}
-var Commands map[string]command
+var caughtPokemon = make(map[string]model.Pokemon)
+var pokeApi model.PokeApi = api.PokeApiImpl{}
+var Commands map[string]model.Command
 
-type command struct {
-	name        string
-	description string
-	Callback    func([]string) error
-	config      *config
-}
-
-type config struct {
-	next     string
-	previous string
-}
-
-func InitCommands() map[string]command {
-	config := &config{next: locationAreaURL}
-	return map[string]command{
+func InitCommands() map[string]model.Command {
+	config := &model.Config{Next: locationAreaURL}
+	return map[string]model.Command{
 		"help": {
-			name:        "help",
-			description: "this command will help you to learn about pokedex",
+			Name:        "help",
+			Description: "this command will help you to learn about pokedex",
 			Callback:    helpCallback,
 		},
 		"exit": {
-			name:        "exit",
-			description: "exist the pokedex program",
+			Name:        "exit",
+			Description: "exist the pokedex program",
 			Callback:    exitCallBack,
 		},
 		"map": {
-			name:        "map",
-			description: "get next 20 location areas",
+			Name:        "map",
+			Description: "get next 20 location areas",
 			Callback:    mapCallBack,
-			config:      config,
+			Config:      config,
 		},
 		"mapb": {
-			name:        "mapb",
-			description: "map back to previous page",
+			Name:        "mapb",
+			Description: "map back to previous page",
 			Callback:    mapBackCallBack,
-			config:      config,
+			Config:      config,
 		},
 		"explore": {
-			name:        "explore",
-			description: "list pokemons within a location area. \n usage: explore <area_name>.",
+			Name:        "explore",
+			Description: "list pokemons within a location area. \n usage: explore <area_name>.",
 			Callback:    exploreCallBack,
 		},
 		"catch": {
-			name:        "catch",
-			description: "Used to catch a pokemon. \n usage: catch <pokemon_name>",
+			Name:        "catch",
+			Description: "Used to catch a pokemon. \n usage: catch <pokemon_name>",
 			Callback:    catchCallBack,
 		},
 		"inspect": {
-			name:        "inspect",
-			description: "It takes the name of a Pokemon as an argument. It should print the name, height, weight, stats and type(s) of the Pokemon",
+			Name:        "inspect",
+			Description: "It takes the name of a Pokemon as an argument. It should print the name, height, weight, stats and type(s) of the Pokemon",
 			Callback:    inspectCallBack,
+		},
+		"pokedex": {
+			Name:        "pokedex",
+			Description: "list the names of all caught Pokemon.",
+			Callback:    pokedexCallBack,
 		},
 	}
 }
 
+func pokedexCallBack(strings []string) error {
+	if len(caughtPokemon) < 1 {
+		fmt.Println("Your Pokedex is empty.")
+		return nil
+	}
+
+	fmt.Println("Your Pokedex:")
+	for _, poke := range caughtPokemon {
+		fmt.Println("- ", poke.Name)
+	}
+	return nil
+}
+
 func inspectCallBack(params []string) error {
 	pokeName := params[0]
-	pokemon, ok := catchedPokemon[pokeName]
+	pokemon, ok := caughtPokemon[pokeName]
 	if !ok {
 		fmt.Println("you have not caught ", pokeName)
 		return nil
 	}
 	fmt.Println("Name: ", pokeName)
 	fmt.Println("Base experience: ", pokemon.BaseExperience)
+	fmt.Println("Stats:")
+	for _, stat := range pokemon.Stats {
+		fmt.Println(fmt.Sprintf("- %s: %d", stat.Stat.Name, stat.BaseStat))
+	}
+
+	fmt.Println("Types:")
+	for _, pkeType := range pokemon.Types {
+		fmt.Println("- ", pkeType.Type.Name)
+
+	}
 
 	return nil
 }
@@ -85,10 +101,10 @@ func inspectCallBack(params []string) error {
 func catchCallBack(param []string) error {
 	pokeUrl := pokemonUrl + param[0]
 	fmt.Println(fmt.Sprintf("Throwing a Pokeball at %s ...", param[0]))
-	pokemon := pokeapi.GetPokemon(pokeUrl)
-	if pokemon.BaseExperience < rand.Intn(100) {
+	pokemon := pokeApi.GetPokemon(pokeUrl)
+	if pokemon.BaseExperience < rand.Intn(500) {
 		fmt.Println(fmt.Sprintf("%s was caught!", param[0]))
-		catchedPokemon[param[0]] = pokemon
+		caughtPokemon[param[0]] = pokemon
 	} else {
 		fmt.Println(fmt.Sprintf("%s escaped!", param[0]))
 	}
@@ -98,47 +114,47 @@ func catchCallBack(param []string) error {
 
 func exploreCallBack(params []string) error {
 	area := locationAreaURL + "/" + params[0]
-	pokemon := pokeapi.GetPokemons(area)
+	pokemon := pokeApi.GetPokemons(area)
 	for _, pke := range pokemon.PokemonEncounters {
 		fmt.Println(pke.Pokemon.Name)
 	}
 	return nil
 }
 
-func mapBackCallBack(params []string) error {
+func mapBackCallBack(_ []string) error {
 	mapCommand := Commands["mapb"]
-	if mapCommand.config.previous == "" {
+	if mapCommand.Config.Previous == "" {
 		return fmt.Errorf("no previous page to show")
 	}
-	area := pokeapi.GetLocationArea(mapCommand.config.previous)
+	area := pokeApi.GetLocationArea(mapCommand.Config.Previous)
 	for _, result := range area.Results {
 		fmt.Println(result.Name)
 	}
-	mapCommand.config.next = area.Next
-	mapCommand.config.previous = area.Previous
+	mapCommand.Config.Next = area.Next
+	mapCommand.Config.Previous = area.Previous
 	return nil
 }
 
-func mapCallBack(params []string) error {
+func mapCallBack(_ []string) error {
 	mapCommand := Commands["map"]
-	fmt.Println("next: ", mapCommand.config.next)
-	area := pokeapi.GetLocationArea(mapCommand.config.next)
+	fmt.Println("next: ", mapCommand.Config.Next)
+	area := pokeApi.GetLocationArea(mapCommand.Config.Next)
 	for _, result := range area.Results {
 		fmt.Println(result.Name)
 	}
-	mapCommand.config.next = area.Next
-	mapCommand.config.previous = area.Previous
+	mapCommand.Config.Next = area.Next
+	mapCommand.Config.Previous = area.Previous
 	return nil
 }
 
-func exitCallBack(params []string) error {
+func exitCallBack(_ []string) error {
 	return nil
 }
 
-func helpCallback(params []string) error {
+func helpCallback(_ []string) error {
 	for _, command := range Commands {
-		fmt.Println("name: " + command.name)
-		fmt.Println("description: " + command.description)
+		fmt.Println("name: " + command.Name)
+		fmt.Println("description: " + command.Description)
 	}
 	return nil
 }

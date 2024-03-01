@@ -11,39 +11,10 @@ import (
 
 var cacheManager = cache.NewCache(7)
 
-type PokeApi interface {
-	GetLocationArea(url string) LocationAreaRS
-	GetPokemons(area string) PokemonRS
-	GetPokemon(url string) model.Pokemon
-}
-
-type Area struct {
-	name string
-	url  string
-}
-
 type PokeApiImpl struct{}
-type LocationAreaRS struct {
-	Count    int
-	Next     string
-	Previous string
-	Results  []struct {
-		Name string
-		URL  string
-	}
-}
 
-type PokemonRS struct {
-	PokemonEncounters []struct {
-		Pokemon struct {
-			Name string `json:"name"`
-			URL  string `json:"url"`
-		} `json:"pokemon"`
-	} `json:"pokemon_encounters"`
-}
-
-func (api PokeApiImpl) GetLocationArea(url string) LocationAreaRS {
-	areas := LocationAreaRS{}
+func (api PokeApiImpl) GetLocationArea(url string) model.LocationAreaRS {
+	areas := model.LocationAreaRS{}
 	err := getJson(url, &areas)
 	if err != nil {
 		panic(err)
@@ -51,8 +22,8 @@ func (api PokeApiImpl) GetLocationArea(url string) LocationAreaRS {
 	return areas
 }
 
-func (api PokeApiImpl) GetPokemons(area string) PokemonRS {
-	pokemons := PokemonRS{}
+func (api PokeApiImpl) GetPokemons(area string) model.PokemonRS {
+	pokemons := model.PokemonRS{}
 	err := getJson(area, &pokemons)
 	if err != nil {
 		panic(err)
